@@ -6543,7 +6543,7 @@ function App() {
         callAuth({
           action: 'instagram_login',
           code: ig_code,
-          redirect_uri: window.location.origin + window.location.pathname
+          redirect_uri: window.location.origin + window.location.pathname.replace(/\/+$/, '')
         }).then(async res => {
           if (res.ok) {
             localStorage.setItem('cfd_token', res.token);
