@@ -1262,7 +1262,7 @@ function AuthScreen({
   function loginGoogle() {
     setErro('');
     const clientId = '1037198947358-688k3scjbn55jiehd4416drmirrgc90m.apps.googleusercontent.com';
-    const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
+    const redirect = encodeURIComponent(window.location.origin + window.location.pathname.replace(/\/+$/, ''));
     const scope = encodeURIComponent('openid email profile');
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirect}&response_type=token&scope=${scope}`;
     window.location.href = url;
