@@ -25,7 +25,7 @@ async function rodar(){
  var d=f.contentDocument;
  var nt=[].slice.call(d.querySelectorAll('button')).filter(function(x){return txt(x).indexOf('Nova')>-1&&x.offsetParent})[0];
  if(nt){nt.click();await w(1000);var m=d.querySelector('.fixed.inset-0 > div');
-  if(m){var r2=m.getBoundingClientRect();res.push('modal: esq '+Math.round(r2.left)+' dir '+Math.round(r2.right)+(r2.right>413||r2.left<-2?' CORTADO':' cabe');var fc=d.querySelector('.fixed.inset-0');if(fc)fc.click();await w(300)}}
+  if(m){var r2=m.getBoundingClientRect();res.push('modal: esq '+Math.round(r2.left)+' dir '+Math.round(r2.right)+(r2.right>413||r2.left<-2?' CORTADO':' cabe'));var fc=d.querySelector('.fixed.inset-0');if(fc)fc.click();await w(300)}}
  var cc=[].slice.call(d.querySelectorAll('button')).filter(function(x){return txt(x).indexOf('Cancelar')>-1&&x.offsetParent})[0];
  if(cc){cc.click();await w(300)}
  var hb=d.getElementById('tut-help-btn');
