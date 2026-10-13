@@ -1261,8 +1261,8 @@ function AuthScreen({
   // Google OAuth via redirecionamento de pagina (sem popup - nao e bloqueado por navegadores)
   function loginGoogle() {
     setErro('');
-    const clientId = '1037198947358-688k3scjbn55jiehd4416drmirrgc90m.apps.googleusercontent.com';
-    const redirect = encodeURIComponent(window.location.origin + window.location.pathname.replace(/\/+$/, ''));
+    const clientId = '755320517703-jsf4qsilmg1b09j8eercvr5bsuan0rd1';
+    const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
     const scope = encodeURIComponent('openid email profile');
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirect}&response_type=token&scope=${scope}`;
     window.location.href = url;
@@ -6543,7 +6543,7 @@ function App() {
         callAuth({
           action: 'instagram_login',
           code: ig_code,
-          redirect_uri: window.location.origin + window.location.pathname.replace(/\/+$/, '')
+          redirect_uri: window.location.origin + window.location.pathname
         }).then(async res => {
           if (res.ok) {
             localStorage.setItem('cfd_token', res.token);
