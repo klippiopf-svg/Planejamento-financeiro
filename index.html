@@ -784,6 +784,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       .fixed.inset-0 > div { max-width: calc(100vw - 16px) !important; }
       .fixed.inset-0 .w-full { max-width: 100% !important; }
     }
+    /* ── Transações / Parcelamentos no celular ── */
+    @media (max-width: 767px) {
+      /* botões do card de parcelamento: linha própria, sem sobrepor */
+      .parc-head { flex-direction: column !important; gap: 10px; }
+      .parc-head > div:first-child { width: 100%; }
+      .parc-acoes { width: 100%; flex-wrap: wrap; gap: 6px !important; }
+      .parc-acoes button { flex: 1 1 0; min-width: max-content !important; white-space: nowrap !important;
+        padding: 7px 10px !important; font-size: 12px !important; }
+      /* equação de saldo: grade compacta de 2 colunas em vez de uma fila gigante */
+      .eq-saldo { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px !important; }
+      .eq-saldo > span { display: none !important; }
+      .eq-saldo > div { min-width: 0 !important; width: 100%; padding: 8px 10px !important; }
+      .eq-saldo p { white-space: normal !important; }
+      .eq-saldo p:first-child { font-size: 10px !important; line-height: 1.2; }
+      .eq-saldo p:last-child { font-size: 14px !important; line-height: 1.25; word-break: break-word; }
+      /* filtros: texto menor, sem cortar */
+      main select, main input[type="date"], main input[type="text"] { font-size: 13px !important; padding: 7px 8px !important; }
+      /* lista de transações mais compacta */
+      main .p-4 { padding: 10px 12px !important; }
+      main .gap-3 { gap: 8px !important; }
+      main .w-10.h-10 { width: 34px !important; height: 34px !important; font-size: 14px !important; }
+    }
     @media (max-width: 640px) {
       .text-4xl { font-size: 1.6rem !important; line-height: 2rem !important; }
       .text-3xl { font-size: 1.35rem !important; line-height: 1.7rem !important; }
@@ -3661,7 +3683,7 @@ function Transacoes({
   React.createElement("div", {
     className: "bg-white rounded-2xl p-4 shadow-sm"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap items-center gap-2 pb-1"
+    className: "eq-saldo flex flex-wrap items-center gap-2 pb-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex-shrink-0 min-w-[110px] bg-gray-50 rounded-xl p-3"
   }, /*#__PURE__*/React.createElement("p", {
@@ -3711,7 +3733,7 @@ function Transacoes({
     }, 0);
     const totalTransf = totalSaldoFinal - totalSaldoInicial - totalR + totalD;
     return /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-wrap items-center gap-2 pb-1"
+      className: "eq-saldo flex flex-wrap items-center gap-2 pb-1"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex-shrink-0 min-w-[110px] bg-gray-50 rounded-xl p-3"
     }, /*#__PURE__*/React.createElement("p", {
@@ -4862,7 +4884,7 @@ function Parcelamentos({
       key: p.id,
       className: "bg-white rounded-2xl p-5 shadow-sm"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start justify-between mb-4"
+      className: "parc-head flex items-start justify-between mb-4"
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2 flex-wrap"
     }, /*#__PURE__*/React.createElement("h3", {
@@ -4874,7 +4896,7 @@ function Parcelamentos({
     }, finalizaLabel || stLabel, isFinished && ultimaPaga ? ` ${ultimaPaga.data?.split('-').reverse().join('/')}` : '')), /*#__PURE__*/React.createElement("p", {
       className: "text-xs text-gray-400 mt-0.5"
     }, conta?.nome, cat ? ` · ${cat.icone} ${cat.nome}` : '')), /*#__PURE__*/React.createElement("div", {
-      className: "flex gap-2"
+      className: "parc-acoes flex gap-2"
     }, isRec && p.status === 'Ativo' && /*#__PURE__*/React.createElement("button", {
       onClick: async () => {
         try {
