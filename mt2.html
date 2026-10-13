@@ -9,10 +9,21 @@ function medir(r){var d=f.contentDocument,W=f.contentWindow;var de=d.documentEle
  res.push(r+': viewport '+W.innerWidth+' | scrollW '+de.scrollWidth+' | maior elemento termina em '+Math.round(maior)+'px ('+q+')'+(maior>W.innerWidth+2?' ⚠️ ESTOURA':' ✓'));o.textContent=res.join('\n')}
 (async function(){
  await w(9000);var d=f.contentDocument;
- // login de teste via token no localStorage nao e possivel; mede o que carregou
- medir('inicial');
- var h=d.querySelector('main h1');res.push('titulo: '+(h&&h.textContent));
- var b=d.getElementById('tut-help-btn');if(b){b.click();await w(500);var t=d.querySelector('#tut-overlay h3');res.push('tutorial abriu: '+(t?t.textContent:'NAO'));var ok=d.getElementById('tut-ok');ok&&ok.click();}
+ var abas=['Dashboard','Transa','Metas','Simula','Relat','Contas','Parcelamentos','Categorias','Configura'];
+ for(var i=0;i<abas.length;i++){
+  // abre o drawer e clica na aba
+  var menu=d.querySelector('nav.fixed button, nav button.flex');var mb=[].slice.call(d.querySelectorAll('button')).filter(function(x){return x.textContent.trim()==='\u2630Menu'||x.textContent.trim()==='Menu'})[0];
+  if(mb){mb.click();await w(400);}
+  var bt=[].slice.call(d.querySelectorAll('.fixed.inset-0 button, aside button')).filter(function(x){return x.textContent.indexOf(abas[i])>-1})[0];
+  if(bt){bt.click();await w(1800);}
+  var ok=d.getElementById('tut-ok');if(ok){ok.click();await w(200);}
+  medir(abas[i]);
+  var h=d.querySelector('main h1');res.push('   titulo: '+(h?h.textContent.trim():'?'));
+  var b=d.getElementById('tut-help-btn');if(b){b.click();await w(400);var t=d.querySelector('#tut-overlay h3');res.push('   tutorial: '+(t?t.textContent:'NAO ABRIU'));var k=d.getElementById('tut-ok');k&&k.click();await w(200);}
+ }
+ // modal nova transacao
+ var nt=[].slice.call(d.querySelectorAll('button')).filter(function(x){return x.textContent.indexOf('Nova')>-1})[0];
+ if(nt){nt.click();await w(900);var m=d.querySelector('.fixed.inset-0 > div');if(m){var r=m.getBoundingClientRect();res.push('modal: left '+Math.round(r.left)+' right '+Math.round(r.right)+' (tela 411) '+(r.right>413||r.left<-2?'⚠️ CORTADO':'✓ cabe'));}}
  o.textContent=res.join('\n');
 })();
 </script></body></html>
