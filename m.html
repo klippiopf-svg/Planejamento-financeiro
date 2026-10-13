@@ -35,7 +35,7 @@ async function rodar(){
  for(var j=0;j<abas.length;j++){await trocar(abas[j]);medir('360/'+abas[j])}
  var nt2=[].slice.call(f.contentDocument.querySelectorAll('button')).filter(function(x){return txt(x).indexOf('Nova')>-1&&x.offsetParent})[0];
  if(nt2){nt2.click();await w(1000);var m2=f.contentDocument.querySelector('.fixed.inset-0 > div');
-  if(m2){var r3=m2.getBoundingClientRect();res.push('modal360: esq '+Math.round(r3.left)+' dir '+Math.round(r3.right)+(r3.right>362||r3.left<-2?' CORTADO':' cabe')}}
+  if(m2){var r3=m2.getBoundingClientRect();res.push('modal360: esq '+Math.round(r3.left)+' dir '+Math.round(r3.right)+(r3.right>362||r3.left<-2?' CORTADO':' cabe'))}}
  o.textContent=res.join('\n');
 }
 rodar();
