@@ -770,6 +770,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     .text-\[10px\] { font-size: 10px; line-height: 1.3; }
     .text-\[11px\] { font-size: 11px; line-height: 1.4; }
     table { max-width: 100%; }
+    #root, #root > div { max-width: 100%; }
+    main { min-width: 0; max-width: 100%; }
+    main * { min-width: 0; }
+    main img, main canvas, main svg, main select, main input { max-width: 100%; }
+    main select, main input[type="date"], main input[type="text"], main input[type="number"] { min-width: 0; }
+    main canvas { width: 100% !important; height: auto !important; }
+    @media (max-width: 767px) {
+      main .grid { grid-template-columns: minmax(0, 1fr) !important; }
+      main .grid.grid-cols-2, main .grid.grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      main .flex-nowrap, main .whitespace-nowrap { white-space: normal !important; flex-wrap: wrap !important; }
+      main .overflow-x-auto { max-width: 100%; }
+      .fixed.inset-0 > div { max-width: calc(100vw - 16px) !important; }
+      .fixed.inset-0 .w-full { max-width: 100% !important; }
+    }
     @media (max-width: 640px) {
       .text-4xl { font-size: 1.6rem !important; line-height: 2rem !important; }
       .text-3xl { font-size: 1.35rem !important; line-height: 1.7rem !important; }
@@ -6961,7 +6975,7 @@ function App() {
     onClick: logout,
     className: "w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl flex items-center gap-2"
   }, "\uD83D\uDEAA Sair")))), /*#__PURE__*/React.createElement("main", {
-    className: "flex-1 md:ml-56 pb-24 md:pb-0 pt-16 md:pt-0"
+    className: "flex-1 min-w-0 w-full md:ml-56 pb-24 md:pb-0 pt-16 md:pt-0"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 pt-4 md:pt-8 pb-8"
   }, /*#__PURE__*/React.createElement(BannerAssinatura, {
@@ -6997,6 +7011,9 @@ var TUT = {
     "_geral": ["Bem-vindo ao Planejamento Financeiro! Entre com email e senha ou use os bot\u00f5es de login social.", "Depois de entrar, use o menu lateral: Dashboard (vis\u00e3o geral), Transa\u00e7\u00f5es (lan\u00e7amentos), Metas (objetivos), Simula\u00e7\u00e3o (proje\u00e7\u00f5es), Relat\u00f3rio (an\u00e1lises), Contas, Parcelamentos e Categorias.", "Cada aba tem o seu pr\u00f3prio tutorial \u2014 toque neste bot\u00e3o de ajuda em qualquer momento."]  };
 
   function currentTab() {
+    var NOMES = ['Dashboard','Transa','Metas','Simula','Relat','Contas','Parcelamentos','Categorias','Configura'];
+    var CHAVES = Object.keys(TUT).filter(function (k) { return k !== '_geral'; });
+    // 1) menu lateral (desktop)
     var btns = document.querySelectorAll('aside nav button');
     var active = null;
     for (var i = 0; i < btns.length; i++) {
@@ -7007,6 +7024,15 @@ var TUT = {
       var t = (active.textContent || '').trim();
       for (var k in TUT) {
         if (k !== '_geral' && t.indexOf(k) > -1) return k;
+      }
+    }
+    // 2) celular: o menu lateral esta oculto, usa o titulo (h1/h2) da pagina aberta
+    var heads = document.querySelectorAll('main h1, main h2');
+    for (var h = 0; h < heads.length; h++) {
+      var ht = (heads[h].textContent || '').trim();
+      for (var c = 0; c < CHAVES.length; c++) {
+        var raiz = CHAVES[c].replace(/[^A-Za-z]/g, '').substring(0, 5);
+        if (raiz && ht.toLowerCase().indexOf(raiz.toLowerCase()) > -1) return CHAVES[c];
       }
     }
     return '_geral';
@@ -7049,7 +7075,7 @@ var TUT = {
   }
   setInterval(function () {
     if (document.getElementById('tut-overlay')) return;
-    if (!document.querySelector('aside nav button')) return; // aguardar menu renderizar
+    if (!document.querySelector('aside nav button') && !document.querySelector('main')) return; // aguardar app renderizar
     var t = currentTab();
     if (t && t !== ultimaTab) {
       ultimaTab = t;
@@ -7064,7 +7090,7 @@ var TUT = {
   btn.id = 'tut-help-btn';
   btn.textContent = '?';
   btn.title = 'Tutorial desta aba';
-  btn.style.cssText = 'position:fixed;bottom:96px;right:24px;z-index:99998;width:52px;height:52px;border-radius:50%;border:none;background:#1565c0;color:#fff;font-size:24px;font-weight:700;font-family:Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);cursor:pointer';
+  btn.style.cssText = 'position:fixed;bottom:76px;right:14px;z-index:99998;width:44px;height:44px;border-radius:50%;border:none;background:#1565c0;color:#fff;font-size:24px;font-weight:700;font-family:Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);cursor:pointer';
   btn.onclick = showTutorial;
   document.body.appendChild(btn);
 })();
