@@ -772,14 +772,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     table { max-width: 100%; }
     #root, #root > div { max-width: 100%; }
     main { min-width: 0; max-width: 100%; }
-    main * { min-width: 0; }
     main img, main canvas, main svg, main select, main input { max-width: 100%; }
     main select, main input[type="date"], main input[type="text"], main input[type="number"] { min-width: 0; }
     main canvas { width: 100% !important; height: auto !important; }
     @media (max-width: 767px) {
-      main .grid { grid-template-columns: minmax(0, 1fr) !important; }
-      main .grid.grid-cols-2, main .grid.grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-      main .flex-nowrap, main .whitespace-nowrap { white-space: normal !important; flex-wrap: wrap !important; }
       main .overflow-x-auto { max-width: 100%; }
       .fixed.inset-0 > div { max-width: calc(100vw - 16px) !important; }
       .fixed.inset-0 .w-full { max-width: 100% !important; }
@@ -801,10 +797,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       .eq-saldo p:last-child { font-size: 14px !important; line-height: 1.25; word-break: break-word; }
       /* filtros: texto menor, sem cortar */
       main select, main input[type="date"], main input[type="text"] { font-size: 13px !important; padding: 7px 8px !important; }
+      /* ── lista de transações: 2 linhas organizadas ── */
+      .tx-row { flex-wrap: wrap !important; padding: 10px 12px !important; gap: 6px 10px !important; align-items: flex-start !important; }
+      .tx-row .tx-info { flex: 1 1 0; min-width: 0 !important; }
+      .tx-row .tx-desc { font-size: 13px !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; word-break: break-word; }
+      .tx-row .tx-info span { font-size: 11px !important; }
+      .tx-dir { flex: 1 1 100% !important; justify-content: space-between !important; padding-left: 46px; }
+      .tx-dir > span, .tx-dir > p { font-size: 15px !important; white-space: nowrap !important; }
       /* lista de transações mais compacta */
-      main .p-4 { padding: 10px 12px !important; }
-      main .gap-3 { gap: 8px !important; }
-      main .w-10.h-10 { width: 34px !important; height: 34px !important; font-size: 14px !important; }
     }
     @media (max-width: 640px) {
       .text-4xl { font-size: 1.6rem !important; line-height: 2rem !important; }
@@ -3873,7 +3873,7 @@ function Transacoes({
       className: "text-xs font-bold text-gray-500"
     }, fmtDate(t.data))), /*#__PURE__*/React.createElement("div", {
       onClick: modoSelecao ? () => toggleSelecao(t.id) : undefined,
-      className: `flex items-center gap-3 p-4 transition-all border-b border-gray-50
+      className: `tx-row flex items-center gap-3 p-4 transition-all border-b border-gray-50
                     ${modoSelecao ? 'cursor-pointer' : ''} 
                     ${isSel ? 'bg-indigo-50 border-l-4 border-indigo-400' : isAutoTransfer ? 'bg-purple-50/30' : 'hover:bg-gray-50'}`
     }, modoSelecao && /*#__PURE__*/React.createElement("input", {
@@ -3888,11 +3888,11 @@ function Transacoes({
         background: cat?.cor || '#9E9E9E'
       }
     }, cat?.icone || (t.tipo === 'Receita' ? '💰' : t.tipo === 'Transferência' ? '⇄' : '📦')), /*#__PURE__*/React.createElement("div", {
-      className: "flex-1 min-w-0"
+      className: "tx-info flex-1 min-w-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-1.5 flex-wrap"
     }, /*#__PURE__*/React.createElement("p", {
-      className: "text-sm font-medium text-gray-800 truncate"
+      className: "tx-desc text-sm font-medium text-gray-800 truncate"
     }, t.descricao), t.total_parcelas > 1 && /*#__PURE__*/React.createElement("span", {
       className: "text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full"
     }, t.numero_parcela, "/", t.total_parcelas), isAutoTransfer && t.tipo === 'Transferência' && t.status === 'Pendente' && /*#__PURE__*/React.createElement("span", {
@@ -3910,7 +3910,7 @@ function Transacoes({
     }, "\xB7"), /*#__PURE__*/React.createElement("span", {
       className: "text-xs text-gray-400"
     }, catMae ? `${catMae.nome} / ` : '', cat.nome)))), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2 flex-shrink-0"
+      className: "tx-dir flex items-center gap-2 flex-shrink-0"
     }, /*#__PURE__*/React.createElement(StatusBadge, {
       status: t.status
     }), t.tipo === 'Transferência' ? (() => {
@@ -7112,7 +7112,7 @@ var TUT = {
   btn.id = 'tut-help-btn';
   btn.textContent = '?';
   btn.title = 'Tutorial desta aba';
-  btn.style.cssText = 'position:fixed;bottom:76px;right:14px;z-index:99998;width:44px;height:44px;border-radius:50%;border:none;background:#1565c0;color:#fff;font-size:24px;font-weight:700;font-family:Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);cursor:pointer';
+  btn.style.cssText = 'position:fixed;bottom:84px;right:14px;z-index:2147483000;width:44px;height:44px;border-radius:50%;border:none;background:#1565c0;color:#fff;font-size:24px;font-weight:700;font-family:Inter,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);cursor:pointer';
   btn.onclick = showTutorial;
   document.body.appendChild(btn);
 })();
