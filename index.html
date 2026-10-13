@@ -760,7 +760,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     .animate-spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   
-  </style>
+  
+    /* ── Adequação à tela do celular ── */
+    html, body { max-width: 100vw; overflow-x: hidden; }
+    table { max-width: 100%; }
+    @media (max-width: 640px) {
+      .text-4xl { font-size: 1.6rem !important; line-height: 2rem !important; }
+      .text-3xl { font-size: 1.35rem !important; line-height: 1.7rem !important; }
+      .text-2xl { font-size: 1.15rem !important; line-height: 1.5rem !important; }
+      .p-5 { padding: 1rem !important; }
+      .rounded-2xl { border-radius: 1rem !important; }
+    }
+</style>
 </head>
 <body>
   <div id="root"></div>
@@ -995,12 +1006,12 @@ function aplicarMovimentoConta(mapa, t, contasNormais) {
       // ATUAL — não há risco de debitar duas vezes o mesmo registro).
       if (origemNormal) mapa[t.conta_id] = (mapa[t.conta_id] || 0) - (t.valor || 0);
       // O cartão (conta_destino_id) não é "conta normal" — não participa deste somatório.
-    } else if (t.status === 'Confirmado') {
-      // Transferência normal Confirmada: subtrai origem, soma destino
+    } else {
+      // Transferência normal (Pendente OU Confirmada): subtrai origem, soma destino.
+      // Pendentes também entram na somatória, igual a receitas/despesas pendentes.
       if (origemNormal) mapa[t.conta_id] = (mapa[t.conta_id] || 0) - (t.valor || 0);
       if (destinoNormal) mapa[t.conta_destino_id] = (mapa[t.conta_destino_id] || 0) + (t.valor || 0);
     }
-    // Transferências normais Pendentes (não AUTO_CARTAO): não afetam saldo ainda
   }
 }
 function contasNormaisSet(contas) {
@@ -4875,7 +4886,7 @@ function Parcelamentos({
       },
       className: "text-xs text-red-600 hover:text-white hover:bg-red-600 px-3 py-1.5 border border-red-300 rounded-lg font-medium transition-colors"
     }, "\uD83D\uDDD1 Excluir"))), /*#__PURE__*/React.createElement("div", {
-      className: `grid gap-3 mb-4 ${isRec ? 'grid-cols-2' : 'grid-cols-3'}`
+      className: `grid gap-3 mb-4 ${isRec ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-3'}`
     }, isRec ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: `${cor.light} rounded-xl p-3 text-center`
     }, /*#__PURE__*/React.createElement("p", {
@@ -6369,6 +6380,8 @@ function Config({ token, onExcluido }) {
 }
 // ============ ASSINATURA (3 meses gratis, depois R$12/mes ou R$108/ano) ============
 function BannerAssinatura({ assina, token }) {
+  // Aparece UMA vez como modal toda vez que o app é aberto (não fica fixo nas páginas)
+  const [fechado, setFechado] = useState(false);
   const [carregando, setCarregando] = useState(false);
   async function assinar(plano) {
     if (!token) return;
@@ -6381,7 +6394,7 @@ function BannerAssinatura({ assina, token }) {
       }
       alert(r.error || 'Erro ao gerar pagamento');
     } catch (e) {
-      alert('Erro de conex\u00e3o');
+      alert('Erro de conexão');
     }
     setCarregando(false);
   }
@@ -6396,37 +6409,51 @@ function BannerAssinatura({ assina, token }) {
       }
       alert(r.error || 'Nenhuma assinatura ativa');
     } catch (e) {
-      alert('Erro de conex\u00e3o');
+      alert('Erro de conexão');
     }
     setCarregando(false);
   }
-  if (!assina) return null;
+  if (!assina || fechado) return null;
   const dtFim = assina.trial_fim ? assina.trial_fim.split('-').reverse().join('/') : '';
+  let titulo = '', mensagem = '', acoes = null;
   if (assina.status === 'ativa') {
-    return /*#__PURE__*/React.createElement("div", {
-      className: "mb-3 rounded-xl bg-green-100 text-green-700 px-4 py-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "font-medium flex-1 min-w-0 break-words"
-    }, "\u2705 Assinatura ", assina.plano === 'anual' ? 'anual' : 'mensal', " ativa \u2014 obrigado por apoiar o app!"), /*#__PURE__*/React.createElement("button", {
+    titulo = '✅ Assinatura ativa';
+    mensagem = 'Sua assinatura ' + (assina.plano === 'anual' ? 'anual' : 'mensal') + ' está ativa — obrigado por apoiar o app!';
+    acoes = [/*#__PURE__*/React.createElement("button", {
       onClick: gerenciar,
       disabled: carregando,
-      className: "text-xs font-semibold underline whitespace-nowrap"
-    }, "Gerenciar / Cancelar"));
-  }
-  if (assina.status === 'trial') {
+      className: "w-full py-2.5 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+    }, "Gerenciar / Cancelar")];
+  } else if (assina.status === 'trial') {
     const dias = assina.dias_restantes;
     const alerta = dias <= 3;
-    return /*#__PURE__*/React.createElement("div", {
-      className: `mb-3 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm ${alerta ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-700'}`
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "font-medium flex-1 min-w-0 break-words"
-    }, alerta ? `\u26A0\uFE0F Aten\u00e7\u00e3o: seu per\u00edodo gr\u00e1tis acaba ${dias === 0 ? 'hoje' : 'em ' + dias + (dias === 1 ? ' dia' : ' dias')}! A partir de ${dtFim} a assinatura ser\u00e1 cobrada: R$ 12/m\u00eas ou R$ 108/ano.` : `\uD83C\uDF89 Per\u00edodo gr\u00e1tis at\u00e9 ${dtFim} (${dias} dias restantes). Depois: R$ 12/m\u00eas ou R$ 108/ano \u2014 cancele quando quiser.`), /*#__PURE__*/React.createElement("button", {
+    titulo = alerta ? '⚠️ Seu período grátis está acabando' : '🎉 Seu período grátis';
+    mensagem = alerta ? 'Seu período grátis acaba ' + (dias === 0 ? 'hoje' : 'em ' + dias + (dias === 1 ? ' dia' : ' dias')) + '! A partir de ' + dtFim + ' a assinatura será cobrada: R$ 12/mês ou R$ 108/ano — cancele quando quiser.' : 'Você está no período grátis até ' + dtFim + ' (' + dias + ' dias restantes). Depois disso: R$ 12/mês ou R$ 108/ano — cancele quando quiser.';
+    acoes = [/*#__PURE__*/React.createElement("div", {
+      key: "planos",
+      className: "flex gap-2"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => assinar('mensal'),
+      disabled: carregando,
+      className: "flex-1 py-2.5 rounded-xl border-2 border-blue-600 text-blue-600 text-sm font-semibold hover:bg-blue-50"
+    }, carregando ? '...' : 'R$ 12/mês'), /*#__PURE__*/React.createElement("button", {
       onClick: () => assinar('anual'),
       disabled: carregando,
-      className: "px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 whitespace-nowrap"
-    }, carregando ? '...' : "Assinar"));
+      className: "flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+    }, carregando ? '...' : 'R$ 108/ano')), /*#__PURE__*/React.createElement("button", {
+      key: "dispensar",
+      onClick: () => setFechado(true),
+      className: "w-full mt-1 text-xs text-gray-400 underline"
+    }, "Continuar grátis por enquanto")];
+  } else {
+    return null;
   }
-  return null;
+  return /*#__PURE__*/React.createElement(Modal, {
+    title: titulo,
+    onClose: () => setFechado(true)
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 leading-relaxed mb-4"
+  }, mensagem), acoes);
 }
 
 function PaywallAssinatura({ user, token }) {
@@ -6980,7 +7007,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
 <script>
 (function(){
 var TUT = {
-    "Dashboard": ["O topo mostra Saldo Atual, Receitas e Despesas do m\u00eas \u2014 apenas transa\u00e7\u00f5es confirmadas entram no c\u00e1lculo.", "Use as setas \u2039 e \u203a para navegar entre os meses.", "\"Anterior\" mostra com quanto o m\u00eas come\u00e7ou e a varia\u00e7\u00e3o desde ent\u00e3o.", "Em \"Minhas Contas\" voc\u00ea v\u00ea o saldo de cada conta; toque em \"Editar\" para gerenciar."],
+    "Dashboard": ["O topo mostra Saldo Atual, Receitas e Despesas do m\u00eas \u2014 todas as transa\u00e7\u00f5es n\u00e3o canceladas entram no c\u00e1lculo (inclusive pendentes).", "Use as setas \u2039 e \u203a para navegar entre os meses.", "\"Anterior\" mostra com quanto o m\u00eas come\u00e7ou e a varia\u00e7\u00e3o desde ent\u00e3o.", "Em \"Minhas Contas\" voc\u00ea v\u00ea o saldo de cada conta; toque em \"Editar\" para gerenciar."],
     "Transa\u00e7\u00f5es": ["Toque em \"+ Nova Transa\u00e7\u00e3o\" para registrar Despesa, Receita ou Transfer\u00eancia.", "Despesas em cart\u00e3o de cr\u00e9dito entram na fatura; o pagamento \u00e9 consolidado no fechamento.", "Use \"Repetir automaticamente\" para contas fixas (aluguel, sal\u00e1rio) \u2014 o app gera as pr\u00f3ximas ocorr\u00eancias sozinho.", "Se a data cair em fim de semana ou feriado, o app sugere mover para o pr\u00f3ximo dia \u00fatil.", "A sele\u00e7\u00e3o m\u00faltipla permite confirmar ou excluir v\u00e1rios lan\u00e7amentos de uma vez."],
     "Metas": ["Crie uma meta com nome, valor objetivo e prazo.", "Escolha o tipo de investimento (Poupan\u00e7a, CDB/CDI, D\u00f3lar ou Cripto) para ver a simula\u00e7\u00e3o de rendimento.", "A barra de progresso mostra quanto j\u00e1 foi guardado e quanto falta.", "Transfira valores para a conta de Investimentos para atualizar o valor atual da meta."],
     "Simula\u00e7\u00e3o": ["Poupan\u00e7a: informe aporte mensal e meses. CDB/CDI: informe o prazo em dias (capitaliza\u00e7\u00e3o di\u00e1ria).", "Proje\u00e7\u00e3o de Saldo: estima o saldo futuro com base nas suas receitas e despesas atuais.", "Quitar D\u00edvidas: simule a economia ao quitar d\u00edvidas antes do prazo.", "D\u00f3lar e Cripto: informe o valor comprado em reais \u2014 o app converte e projeta com a varia\u00e7\u00e3o m\u00e9dia e cota\u00e7\u00f5es ao vivo.", "Os valores s\u00e3o estimativas \u2014 cota\u00e7\u00f5es reais podem variar."],
