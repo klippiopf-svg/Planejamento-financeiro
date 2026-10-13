@@ -746,12 +746,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     .slide-in { animation: slideIn 0.25s ease; }
     @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-    /* Prevenir pull-to-refresh no mobile */
-    html, body { overscroll-behavior: contain; overscroll-behavior-y: none; }
-    body { overflow-x: hidden; max-width: 100vw; }
+    /* Prevenir pull-to-refresh no mobile (CSS nativo, sem bloquear a rolagem) */
+    html { overscroll-behavior-y: contain; }
+    body { overflow-x: hidden; }
     * { -webkit-tap-highlight-color: transparent; }
     [class*="overflow-y-auto"], [class*="overflow-auto"], nav, main { overscroll-behavior: contain; }
-    body { touch-action: pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
     @media (max-width: 767px) {
       input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
     }
@@ -762,7 +761,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   
   
     /* ── Adequação à tela do celular ── */
-    html, body { max-width: 100vw; overflow-x: hidden; }
+    /* classes com valor arbitrário (xxx-[...]) que o Tailwind 2.2 não gera */
+    .max-h-\[92vh\] { max-height: 92vh; }
+    .min-w-\[100px\] { min-width: 100px; }
+    .min-w-\[110px\] { min-width: 110px; }
+    .min-w-\[160px\] { min-width: 160px; }
+    .min-w-\[200px\] { min-width: 200px; }
+    .text-\[10px\] { font-size: 10px; line-height: 1.3; }
+    .text-\[11px\] { font-size: 11px; line-height: 1.4; }
     table { max-width: 100%; }
     @media (max-width: 640px) {
       .text-4xl { font-size: 1.6rem !important; line-height: 2rem !important; }
@@ -6974,34 +6980,6 @@ function App() {
     className: "text-sm font-medium"
   }, "Menu"))));
 }
-/* Bloqueio de pull-to-refresh (iOS antigo + Android)
-   Impede o gesto de puxar para baixo que recarregava a pagina.
-   O scroll normal continua funcionando. */
-(function () {
-  var startY = 0, startX = 0, active = false;
-  function tudoNoTopo(el) {
-    while (el && el !== document.documentElement) {
-      if (el.scrollHeight > el.clientHeight && el.clientHeight > 0 && el.scrollTop > 0) return false;
-      el = el.parentElement;
-    }
-    return (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
-  }
-  document.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1) { active = false; return; }
-    startY = e.touches[0].clientY;
-    startX = e.touches[0].clientX;
-    active = true;
-  }, { passive: true });
-  document.addEventListener('touchmove', function (e) {
-    if (!active || e.touches.length !== 1) return;
-    var t = e.touches[0];
-    var dy = t.clientY - startY, dx = t.clientX - startX;
-    if (Math.abs(dx) > Math.abs(dy)) return;
-    if (dy <= 0) return;
-    if (tudoNoTopo(e.target)) e.preventDefault();
-  }, { passive: false });
-})();
-
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
 </script>
 <script>
