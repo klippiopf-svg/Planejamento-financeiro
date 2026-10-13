@@ -1,0 +1,18 @@
+<!DOCTYPE html><html><body style="margin:0;background:#222;color:#0f0;font:12px monospace">
+<pre id="o" style="position:fixed;top:0;left:430px;margin:4px;white-space:pre-wrap;width:500px"></pre>
+<iframe id="f" src="/Planejamento-financeiro/?t=3" style="width:411px;height:860px;border:0;background:#fff"></iframe>
+<script>
+var f=document.getElementById('f'),o=document.getElementById('o'),res=[];
+function w(ms){return new Promise(r=>setTimeout(r,ms))}
+function medir(r){var d=f.contentDocument,W=f.contentWindow;var de=d.documentElement;
+ var maior=0,q='';d.querySelectorAll('main *').forEach(function(e){var rc=e.getBoundingClientRect();if(rc.right>maior){maior=rc.right;q=e.tagName+'.'+String(e.className).slice(0,40)}});
+ res.push(r+': viewport '+W.innerWidth+' | scrollW '+de.scrollWidth+' | maior elemento termina em '+Math.round(maior)+'px ('+q+')'+(maior>W.innerWidth+2?' ⚠️ ESTOURA':' ✓'));o.textContent=res.join('\n')}
+(async function(){
+ await w(9000);var d=f.contentDocument;
+ // login de teste via token no localStorage nao e possivel; mede o que carregou
+ medir('inicial');
+ var h=d.querySelector('main h1');res.push('titulo: '+(h&&h.textContent));
+ var b=d.getElementById('tut-help-btn');if(b){b.click();await w(500);var t=d.querySelector('#tut-overlay h3');res.push('tutorial abriu: '+(t?t.textContent:'NAO'));var ok=d.getElementById('tut-ok');ok&&ok.click();}
+ o.textContent=res.join('\n');
+})();
+</script></body></html>
