@@ -5615,10 +5615,20 @@ function Simulacao({
     despesa_mensal: 0,
     receita_mensal: 0,
     cdi: 13.15,
-    perc_cdi: 100
+    perc_cdi: 100,
+    fin_valor: 50000,
+    fin_meses: 48,
+    fin_taxa_aa: 14.9,
+    fin_sistema: 'price'
   });
-  const [cotacoes, setCotacoes] = useState({ dolar: null, btc: null, selic: null, tr: null });
+  const [cotacoes, setCotacoes] = useState({ dolar: null, btc: null, selic: null, tr: null, ipca: null });
   useEffect(() => {
+    fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/1?formato=json').then(r => r.json()).then(d => {
+      if (d && d[0] && d[0].valor !== undefined) {
+        const ipc = parseFloat(d[0].valor);
+        if (!isNaN(ipc) && ipc > 0) setCotacoes(c => ({ ...c, ipca: ipc }));
+      }
+    }).catch(() => {});
     fetch('https://open.er-api.com/v6/latest/USD').then(r => r.json()).then(d => { if (d && d.rates && d.rates.BRL) setCotacoes(c => ({ ...c, dolar: d.rates.BRL })); }).catch(() => {});
     fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl').then(r => r.json()).then(d => { if (d && d.bitcoin && d.bitcoin.brl) setCotacoes(c => ({ ...c, btc: d.bitcoin.brl })); }).catch(() => {});
     fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados/ultimos/1?formato=json').then(r => r.json()).then(d => {
@@ -5671,6 +5681,29 @@ function Simulacao({
       juros: acumulado - form.valor_inicial - form.valor_mensal * form.meses
     };
   })();
+  // Simulação de financiamento (Price x SAC)
+  const finRes = (() => {
+    const PV = Number(form.fin_valor) || 0;
+    const n = Math.max(1, Math.round(Number(form.fin_meses) || 0));
+    const iaa = Number(form.fin_taxa_aa) || 0;
+    const im = iaa > 0 ? Math.pow(1 + iaa / 100, 1 / 12) - 1 : 0;
+    const pmt = im === 0 ? PV / n : PV * im / (1 - Math.pow(1 + im, -n));
+    const totalP = pmt * n;
+    const amort = PV / n;
+    let sald = PV, jsac = 0, sac1 = 0, sacN = 0;
+    const linhas = [];
+    for (let k = 1; k <= n; k++) {
+      const jur = sald * im;
+      const parc = amort + jur;
+      if (k === 1) sac1 = parc;
+      if (k === n) sacN = parc;
+      if (linhas.length < 12) linhas.push({ mes: k, parcela: parc, juros: jur, saldo: Math.max(0, sald - amort) });
+      jsac += jur;
+      sald -= amort;
+    }
+    return { PV, n, im, pmt, totalP, jurosP: totalP - PV, sac1, sacN, totalS: PV + jsac, jurosS: jsac, linhas, ok: PV > 0 && n > 0 && iaa > 0 };
+  })();
+
 
   // CDB/CDI simulation
   const cdiAnual = form.cdi / 100;
@@ -5743,7 +5776,7 @@ function Simulacao({
     className: "text-xl font-bold text-gray-800"
   }, "\uD83D\uDD2E Simula\xE7\xF5es Inteligentes"), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 flex-wrap"
-  }, [['poupanca', '💰 Poupança'], ['cdb', '📈 CDB/CDI'], ['saldo', '📊 Projeção de Saldo'], ['divida', '💳 Quitar Dívidas'], ['dolar', '💵 Dólar'], ['cripto', '🪙 Cripto']].map(([k, l]) => /*#__PURE__*/React.createElement("button", {
+  }, [['poupanca', '💰 Poupança'], ['cdb', '📈 CDB/CDI'], ['saldo', '📊 Projeção de Saldo'], ['divida', '💳 Quitar Dívidas'], ['dolar', '💵 Dólar'], ['cripto', '🪙 Cripto'], ['financiamento', '🏦 Financiamento']].map(([k, l]) => /*#__PURE__*/React.createElement("button", {
     key: k,
     onClick: () => setTipo(k),
     className: `px-4 py-2 rounded-xl text-sm font-medium transition-all ${tipo === k ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 shadow-sm'}`
@@ -6000,7 +6033,185 @@ function Simulacao({
     className: `text-xs font-medium w-24 text-right ${v >= 0 ? 'text-gray-600' : 'text-red-600'}`
   }, fmt(v))))), projecaoSaldo[projecaoSaldo.length - 1] < 0 && /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-red-600 mt-3"
-  }, "\u26A0\uFE0F Saldo ficar\xE1 negativo! Considere reduzir despesas ou aumentar receitas."))), tipo === 'divida' && /*#__PURE__*/React.createElement("div", {
+  }, "\u26A0\uFE0F Saldo ficar\xE1 negativo! Considere reduzir despesas ou aumentar receitas."))), tipo === 'financiamento' && /*#__PURE__*/React.createElement("div", {
+  className: "space-y-4"
+}, /*#__PURE__*/React.createElement("div", {
+  className: "bg-white rounded-2xl p-5 shadow-sm"
+}, /*#__PURE__*/React.createElement("h2", {
+  className: "font-semibold text-gray-800 mb-4"
+}, "Simula\xE7\xE3o de Financiamento"), /*#__PURE__*/React.createElement("div", {
+  className: "grid grid-cols-2 gap-3"
+}, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  className: "block text-xs font-medium text-gray-600 mb-1"
+}, "Valor a financiar (R$)"), /*#__PURE__*/React.createElement("input", {
+  name: "fin_valor",
+  type: "number",
+  value: form.fin_valor,
+  onChange: h,
+  className: "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-400"
+})), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  className: "block text-xs font-medium text-gray-600 mb-1"
+}, "Prazo (meses)"), /*#__PURE__*/React.createElement("input", {
+  name: "fin_meses",
+  type: "number",
+  value: form.fin_meses,
+  onChange: h,
+  className: "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-400"
+}))), /*#__PURE__*/React.createElement("div", {
+  className: "mt-3"
+}, /*#__PURE__*/React.createElement("label", {
+  className: "block text-xs font-medium text-gray-600 mb-1"
+}, "Taxa de juros (% ao ano)"), /*#__PURE__*/React.createElement("input", {
+  name: "fin_taxa_aa",
+  type: "number",
+  step: "0.01",
+  value: form.fin_taxa_aa,
+  onChange: h,
+  className: "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-400"
+}), /*#__PURE__*/React.createElement("div", {
+  className: "flex gap-2 flex-wrap mt-2"
+}, cotacoes.selic != null && /*#__PURE__*/React.createElement("button", {
+  type: "button",
+  onClick: () => setForm({
+    ...form,
+    fin_taxa_aa: Number(cotacoes.selic.toFixed(2))
+  }),
+  className: "text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg hover:bg-blue-100"
+}, "\uD83C\uDFAF Selic ", cotacoes.selic.toFixed(2).replace('.', ','), "% a.a."), cotacoes.ipca != null && /*#__PURE__*/React.createElement("button", {
+  type: "button",
+  onClick: () => setForm({
+    ...form,
+    fin_taxa_aa: Number(cotacoes.ipca.toFixed(2))
+  }),
+  className: "text-xs bg-orange-50 text-orange-700 px-2.5 py-1 rounded-lg hover:bg-orange-100"
+}, "\uD83D\uDCCA IPCA 12m ", cotacoes.ipca.toFixed(2).replace('.', ','), "% a.a."), form.cdi > 0 && /*#__PURE__*/React.createElement("button", {
+  type: "button",
+  onClick: () => setForm({
+    ...form,
+    fin_taxa_aa: Number(form.cdi.toFixed(2))
+  }),
+  className: "text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-lg hover:bg-green-100"
+}, "\uD83D\uDCC8 CDI ", Number(form.cdi).toFixed(2).replace('.', ','), "% a.a.")), /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400 mt-1"
+}, "Toque em um \xEDndice para preencher a taxa. Financiamentos cobram \xEDndice + spread do banco \u2014 confira a taxa final do contrato.")), /*#__PURE__*/React.createElement("div", {
+  className: "mt-3"
+}, /*#__PURE__*/React.createElement("label", {
+  className: "block text-xs font-medium text-gray-600 mb-1"
+}, "Sistema de amortiza\xE7\xE3o"), /*#__PURE__*/React.createElement("div", {
+  className: "flex gap-2"
+}, /*#__PURE__*/React.createElement("button", {
+  type: "button",
+  onClick: () => setForm({
+    ...form,
+    fin_sistema: 'price'
+  }),
+  className: `px-3 py-2 rounded-xl text-sm font-medium flex-1 transition-all ${form.fin_sistema === 'sac' ? 'bg-white text-gray-600 shadow-sm' : 'bg-blue-600 text-white'}`
+}, "Price (parcela fixa)"), /*#__PURE__*/React.createElement("button", {
+  type: "button",
+  onClick: () => setForm({
+    ...form,
+    fin_sistema: 'sac'
+  }),
+  className: `px-3 py-2 rounded-xl text-sm font-medium flex-1 transition-all ${form.fin_sistema === 'sac' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 shadow-sm'}`
+}, "SAC (decrescente)"))), /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400 mt-3"
+}, "Os valores s\xE3o estimativas \u2014 as condi\xE7\xF5es reais podem variar.")), finRes.ok && /*#__PURE__*/React.createElement("div", {
+  className: "space-y-4"
+}, /*#__PURE__*/React.createElement("div", {
+  className: "grid grid-cols-2 gap-3"
+}, /*#__PURE__*/React.createElement("div", {
+  className: "bg-white rounded-2xl p-5 shadow-sm text-center"
+}, /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400"
+}, "Parcela mensal"), /*#__PURE__*/React.createElement("p", {
+  className: "text-2xl font-bold text-blue-600 mt-1"
+}, form.fin_sistema === 'sac' ? fmt(finRes.sac1) : fmt(finRes.pmt)), form.fin_sistema === 'sac' && /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400 mt-0.5"
+}, "\xFAltima: ", fmt(finRes.sacN))), /*#__PURE__*/React.createElement("div", {
+  className: "bg-white rounded-2xl p-5 shadow-sm text-center"
+}, /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400"
+}, "Total pago"), /*#__PURE__*/React.createElement("p", {
+  className: "text-lg font-bold text-gray-700 mt-1"
+}, fmt(form.fin_sistema === 'sac' ? finRes.totalS : finRes.totalP)), /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400 mt-0.5"
+}, "de ", fmt(finRes.PV), " financiados")), /*#__PURE__*/React.createElement("div", {
+  className: "bg-white rounded-2xl p-5 shadow-sm text-center"
+}, /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400"
+}, "Juros totais"), /*#__PURE__*/React.createElement("p", {
+  className: "text-lg font-bold text-purple-600 mt-1"
+}, fmt(form.fin_sistema === 'sac' ? finRes.jurosS : finRes.jurosP))), /*#__PURE__*/React.createElement("div", {
+  className: "bg-white rounded-2xl p-5 shadow-sm text-center"
+}, /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400"
+}, "Taxa mensal equivalente"), /*#__PURE__*/React.createElement("p", {
+  className: "text-lg font-bold text-gray-700 mt-1"
+}, (finRes.im * 100).toFixed(2).replace('.', ','), "% a.m."))), /*#__PURE__*/React.createElement("div", {
+  className: "bg-white rounded-2xl p-5 shadow-sm"
+}, /*#__PURE__*/React.createElement("h3", {
+  className: "text-sm font-medium text-gray-600 mb-3"
+}, "Price x SAC"), /*#__PURE__*/React.createElement("div", {
+  className: "space-y-2 text-sm"
+}, /*#__PURE__*/React.createElement("div", {
+  className: "flex items-center justify-between gap-2 bg-gray-50 rounded-xl px-3 py-2"
+}, /*#__PURE__*/React.createElement("span", {
+  className: "text-xs text-gray-500 w-28"
+}, "Parcela inicial"), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-blue-600 flex-1 text-right"
+}, fmt(finRes.pmt)), /*#__PURE__*/React.createElement("span", {
+  className: "text-gray-300"
+}, "|"), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-teal-600 flex-1 text-right"
+}, fmt(finRes.sac1))), /*#__PURE__*/React.createElement("div", {
+  className: "flex items-center justify-between gap-2 bg-gray-50 rounded-xl px-3 py-2"
+}, /*#__PURE__*/React.createElement("span", {
+  className: "text-xs text-gray-500 w-28"
+}, "Parcela final"), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-blue-600 flex-1 text-right"
+}, fmt(finRes.pmt)), /*#__PURE__*/React.createElement("span", {
+  className: "text-gray-300"
+}, "|"), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-teal-600 flex-1 text-right"
+}, fmt(finRes.sacN))), /*#__PURE__*/React.createElement("div", {
+  className: "flex items-center justify-between gap-2 bg-purple-50 rounded-xl px-3 py-2"
+}, /*#__PURE__*/React.createElement("span", {
+  className: "text-xs text-gray-500 w-28"
+}, "Juros totais"), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-purple-600 flex-1 text-right"
+}, fmt(finRes.jurosP)), /*#__PURE__*/React.createElement("span", {
+  className: "text-gray-300"
+}, "|"), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-purple-600 flex-1 text-right"
+}, fmt(finRes.jurosS))), /*#__PURE__*/React.createElement("div", {
+  className: "flex items-center gap-2 text-xs text-gray-400 pt-1"
+}, /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-blue-600"
+}, "Price"), /*#__PURE__*/React.createElement("span", null, "|"), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-teal-600"
+}, "SAC"), /*#__PURE__*/React.createElement("span", {
+  className: "ml-1"
+}, "\u2014 o SAC cobra menos juros no total")))), /*#__PURE__*/React.createElement("div", {
+  className: "bg-white rounded-2xl p-5 shadow-sm"
+}, /*#__PURE__*/React.createElement("h3", {
+  className: "text-sm font-medium text-gray-600 mb-3"
+}, "Evolu\xE7\xE3o das primeiras parcelas ", form.fin_sistema === 'sac' ? '(SAC)' : '(Price)'), /*#__PURE__*/React.createElement("div", {
+  className: "space-y-1"
+}, finRes.linhas.map((l, idx) => /*#__PURE__*/React.createElement("div", {
+  key: idx,
+  className: "flex items-center gap-2 text-xs"
+}, /*#__PURE__*/React.createElement("span", {
+  className: "text-gray-400 w-14"
+}, "M\xEAs ", l.mes), /*#__PURE__*/React.createElement("span", {
+  className: "font-medium text-gray-700 w-24 text-right"
+}, fmt(l.parcela)), /*#__PURE__*/React.createElement("span", {
+  className: "text-red-400 w-24 text-right"
+}, "juros ", fmt(l.juros)), /*#__PURE__*/React.createElement("span", {
+  className: "text-gray-400 flex-1 text-right"
+}, "saldo ", fmt(l.saldo))))), finRes.n > finRes.linhas.length && /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400 text-center mt-2"
+}, "\u2026 e mais ", finRes.n - finRes.linhas.length, " parcelas")))),
+ tipo === 'divida' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl p-5 shadow-sm"
@@ -7024,7 +7235,9 @@ var TUT = {
     "Dashboard": ["O topo mostra Saldo Atual, Receitas e Despesas do m\u00eas \u2014 todas as transa\u00e7\u00f5es n\u00e3o canceladas entram no c\u00e1lculo (inclusive pendentes).", "Use as setas \u2039 e \u203a para navegar entre os meses.", "\"Anterior\" mostra com quanto o m\u00eas come\u00e7ou e a varia\u00e7\u00e3o desde ent\u00e3o.", "Em \"Minhas Contas\" voc\u00ea v\u00ea o saldo de cada conta; toque em \"Editar\" para gerenciar."],
     "Transa\u00e7\u00f5es": ["Toque em \"+ Nova Transa\u00e7\u00e3o\" para registrar Despesa, Receita ou Transfer\u00eancia.", "Despesas em cart\u00e3o de cr\u00e9dito entram na fatura; o pagamento \u00e9 consolidado no fechamento.", "Use \"Repetir automaticamente\" para contas fixas (aluguel, sal\u00e1rio) \u2014 o app gera as pr\u00f3ximas ocorr\u00eancias sozinho.", "Se a data cair em fim de semana ou feriado, o app sugere mover para o pr\u00f3ximo dia \u00fatil.", "A sele\u00e7\u00e3o m\u00faltipla permite confirmar ou excluir v\u00e1rios lan\u00e7amentos de uma vez."],
     "Metas": ["Crie uma meta com nome, valor objetivo e prazo.", "Escolha o tipo de investimento (Poupan\u00e7a, CDB/CDI, D\u00f3lar ou Cripto) para ver a simula\u00e7\u00e3o de rendimento.", "A barra de progresso mostra quanto j\u00e1 foi guardado e quanto falta.", "Transfira valores para a conta de Investimentos para atualizar o valor atual da meta."],
-    "Simula\u00e7\u00e3o": ["Poupan\u00e7a: informe aporte mensal e meses. CDB/CDI: informe o prazo em dias (capitaliza\u00e7\u00e3o di\u00e1ria).", "Proje\u00e7\u00e3o de Saldo: estima o saldo futuro com base nas suas receitas e despesas atuais.", "Quitar D\u00edvidas: simule a economia ao quitar d\u00edvidas antes do prazo.", "D\u00f3lar e Cripto: informe o valor comprado em reais \u2014 o app converte e projeta com a varia\u00e7\u00e3o m\u00e9dia e cota\u00e7\u00f5es ao vivo.", "Os valores s\u00e3o estimativas \u2014 cota\u00e7\u00f5es reais podem variar."],
+    "Simula\u00e7\u00e3o": ["Poupan\u00e7a: informe aporte mensal e meses. CDB/CDI: informe o prazo em dias (capitaliza\u00e7\u00e3o di\u00e1ria).", "Proje\u00e7\u00e3o de Saldo: estima o saldo futuro com base nas suas receitas e despesas atuais.", "Quitar D\u00edvidas: simule a economia ao quitar d\u00edvidas antes do prazo.", "D\u00f3lar e Cripto: informe o valor comprado em reais \u2014 o app converte e projeta com a varia\u00e7\u00e3o m\u00e9dia e cota\u00e7\u00f5es ao vivo.", "Os valores s\u00e3o estimativas \u2014 cota\u00e7\u00f5es reais podem variar.",
+    "🏦 Financiamento: informe valor, prazo e taxa — os índices vigentes (Selic, IPCA, CDI) preenchem a taxa com um toque. Compare Price x SAC."
+  ],
     "Relat\u00f3rio": ["Escolha o per\u00edodo e filtre por conta ou categoria.", "\"Transa\u00e7\u00f5es por Dia\" mostra o movimento di\u00e1rio com saldo acumulado quando uma conta \u00e9 filtrada.", "Transfer\u00eancias aparecem em vermelho (sa\u00edda da conta) e azul (entrada na conta).", "Use \"Exportar PDF\" para salvar ou compartilhar o relat\u00f3rio."],
     "Contas": ["Cadastre contas Banc\u00e1rias, Carteiras, Investimentos e Cart\u00f5es de Cr\u00e9dito.", "No cart\u00e3o: informe limite e dia de vencimento; o saldo dispon\u00edvel = limite \u2212 fatura em aberto \u2212 parcelas futuras.", "Vincule o cart\u00e3o a uma conta banc\u00e1ria para que o pagamento da fatura seja lan\u00e7ado automaticamente no fechamento.", "A equa\u00e7\u00e3o Saldo Anterior + Receitas \u2212 Despesas \u00b1 Transfer\u00eancias aparece no topo da lista."],
     "Parcelamentos": ["Cadastre uma compra parcelada; o app gera todas as parcelas automaticamente.", "O valor total fica reservado do limite do cart\u00e3o conforme as parcelas s\u00e3o pagas.", "\"Finaliza em\" mostra quando vence a \u00faltima parcela.", "Parcelamentos quitados ou cancelados ficam ocultos por padr\u00e3o."],
