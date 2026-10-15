@@ -5691,15 +5691,23 @@ function Simulacao({
     const totalP = pmt * n;
     const amort = PV / n;
     let sald = PV, jsac = 0, sac1 = 0, sacN = 0;
-    const linhas = [];
     for (let k = 1; k <= n; k++) {
       const jur = sald * im;
       const parc = amort + jur;
       if (k === 1) sac1 = parc;
       if (k === n) sacN = parc;
-      if (linhas.length < 12) linhas.push({ mes: k, parcela: parc, juros: jur, saldo: Math.max(0, sald - amort) });
       jsac += jur;
       sald -= amort;
+    }
+    const sis = form.fin_sistema || 'price';
+    const linhas = [];
+    let sald2 = PV;
+    for (let k = 1; k <= n && linhas.length < 12; k++) {
+      const jur = sald2 * im;
+      const parc = sis === 'sac' ? amort + jur : pmt;
+      const amortP = sis === 'sac' ? amort : parc - jur;
+      linhas.push({ mes: k, parcela: parc, juros: jur, saldo: Math.max(0, sald2 - amortP) });
+      sald2 -= amortP;
     }
     return { PV, n, im, pmt, totalP, jurosP: totalP - PV, sac1, sacN, totalS: PV + jsac, jurosS: jsac, linhas, ok: PV > 0 && n > 0 && iaa > 0 };
   })();
