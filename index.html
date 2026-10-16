@@ -5625,10 +5625,11 @@ function Simulacao({
     perc_cdi: 100,
     fin_valor: 50000,
     fin_meses: 48,
-    fin_taxa_aa: 14.9,
+    fin_taxa_mes: 1.16,
     fin_sistema: 'price'
   });
   const [cotacoes, setCotacoes] = useState({ dolar: null, btc: null, selic: null, tr: null, ipca: null });
+  const [finTodas, setFinTodas] = useState(false);
   useEffect(() => {
     fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/1?formato=json').then(r => r.json()).then(d => {
       if (d && d[0] && d[0].valor !== undefined) {
@@ -5688,12 +5689,14 @@ function Simulacao({
       juros: acumulado - form.valor_inicial - form.valor_mensal * form.meses
     };
   })();
-  // Simulação de financiamento (Price x SAC)
+  // Simulação de financiamento (Price x SAC) com IOF embutido
   const finRes = (() => {
-    const PV = Number(form.fin_valor) || 0;
+    const PV0 = Number(form.fin_valor) || 0;
     const n = Math.max(1, Math.round(Number(form.fin_meses) || 0));
-    const iaa = Number(form.fin_taxa_aa) || 0;
-    const im = iaa > 0 ? Math.pow(1 + iaa / 100, 1 / 12) - 1 : 0;
+    const im = (Number(form.fin_taxa_mes) || 0) / 100;
+    const dias = Math.min(n * 30, 365);
+    const iof = PV0 * 0.0038 + PV0 * 0.000082 * dias;
+    const PV = PV0 + iof;
     const pmt = im === 0 ? PV / n : PV * im / (1 - Math.pow(1 + im, -n));
     const totalP = pmt * n;
     const amort = PV / n;
@@ -5707,16 +5710,18 @@ function Simulacao({
       sald -= amort;
     }
     const sis = form.fin_sistema || 'price';
+    const maxL = finTodas ? n : Math.min(n, 12);
     const linhas = [];
     let sald2 = PV;
-    for (let k = 1; k <= n && linhas.length < 12; k++) {
+    for (let k = 1; k <= maxL; k++) {
       const jur = sald2 * im;
       const parc = sis === 'sac' ? amort + jur : pmt;
       const amortP = sis === 'sac' ? amort : parc - jur;
       linhas.push({ mes: k, parcela: parc, juros: jur, saldo: Math.max(0, sald2 - amortP) });
       sald2 -= amortP;
     }
-    return { PV, n, im, pmt, totalP, jurosP: totalP - PV, sac1, sacN, totalS: PV + jsac, jurosS: jsac, linhas, ok: PV > 0 && n > 0 && iaa > 0 };
+    const iaaEq = im > 0 ? (Math.pow(1 + im, 12) - 1) * 100 : 0;
+    return { PV0, PV, iof, n, im, iaaEq, pmt, totalP, jurosP: totalP - PV, sac1, sacN, totalS: PV + jsac, jurosS: jsac, linhas, ok: PV0 > 0 && n > 0 && im > 0 };
   })();
 
 
@@ -6076,39 +6081,41 @@ function Simulacao({
   className: "mt-3"
 }, /*#__PURE__*/React.createElement("label", {
   className: "block text-xs font-medium text-gray-600 mb-1"
-}, "Taxa de juros (% ao ano)"), /*#__PURE__*/React.createElement("input", {
-  name: "fin_taxa_aa",
+}, "Taxa de juros (% ao m\xEAs)"), /*#__PURE__*/React.createElement("input", {
+  name: "fin_taxa_mes",
   type: "number",
-  step: "0.01",
-  value: form.fin_taxa_aa,
+  step: "0.001",
+  value: form.fin_taxa_mes,
   onChange: h,
   className: "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-400"
-}), /*#__PURE__*/React.createElement("div", {
+}), /*#__PURE__*/React.createElement("p", {
+  className: "text-xs text-gray-400 mt-0.5"
+}, "Equivalente a ", finRes.iaaEq.toFixed(2).replace('.', ','), "% ao ano"), /*#__PURE__*/React.createElement("div", {
   className: "flex gap-2 flex-wrap mt-2"
 }, cotacoes.selic != null && /*#__PURE__*/React.createElement("button", {
   type: "button",
   onClick: () => setForm({
     ...form,
-    fin_taxa_aa: Number(cotacoes.selic.toFixed(2))
+    fin_taxa_mes: Number(((Math.pow(1 + cotacoes.selic / 100, 1 / 12) - 1) * 100).toFixed(3))
   }),
   className: "text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg hover:bg-blue-100"
-}, "\uD83C\uDFAF Selic ", cotacoes.selic.toFixed(2).replace('.', ','), "% a.a."), cotacoes.ipca != null && /*#__PURE__*/React.createElement("button", {
+}, "\uD83C\uDFAF Selic ", cotacoes.selic.toFixed(2).replace('.', ','), "% a.a. \u2248 ", ((Math.pow(1 + cotacoes.selic / 100, 1 / 12) - 1) * 100).toFixed(2).replace('.', ','), "% a.m."), cotacoes.ipca != null && /*#__PURE__*/React.createElement("button", {
   type: "button",
   onClick: () => setForm({
     ...form,
-    fin_taxa_aa: Number(cotacoes.ipca.toFixed(2))
+    fin_taxa_mes: Number(((Math.pow(1 + cotacoes.ipca / 100, 1 / 12) - 1) * 100).toFixed(3))
   }),
   className: "text-xs bg-orange-50 text-orange-700 px-2.5 py-1 rounded-lg hover:bg-orange-100"
-}, "\uD83D\uDCCA IPCA 12m ", cotacoes.ipca.toFixed(2).replace('.', ','), "% a.a."), form.cdi > 0 && /*#__PURE__*/React.createElement("button", {
+}, "\uD83D\uDCCA IPCA 12m ", cotacoes.ipca.toFixed(2).replace('.', ','), "% a.a. \u2248 ", ((Math.pow(1 + cotacoes.ipca / 100, 1 / 12) - 1) * 100).toFixed(2).replace('.', ','), "% a.m."), form.cdi > 0 && /*#__PURE__*/React.createElement("button", {
   type: "button",
   onClick: () => setForm({
     ...form,
-    fin_taxa_aa: Number(form.cdi.toFixed(2))
+    fin_taxa_mes: Number(((Math.pow(1 + form.cdi / 100, 1 / 12) - 1) * 100).toFixed(3))
   }),
   className: "text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-lg hover:bg-green-100"
-}, "\uD83D\uDCC8 CDI ", Number(form.cdi).toFixed(2).replace('.', ','), "% a.a.")), /*#__PURE__*/React.createElement("p", {
+}, "\uD83D\uDCC8 CDI ", Number(form.cdi).toFixed(2).replace('.', ','), "% a.a. \u2248 ", ((Math.pow(1 + form.cdi / 100, 1 / 12) - 1) * 100).toFixed(2).replace('.', ','), "% a.m.")), /*#__PURE__*/React.createElement("p", {
   className: "text-xs text-gray-400 mt-1"
-}, "Toque em um \xEDndice para preencher a taxa. Financiamentos cobram \xEDndice + spread do banco \u2014 confira a taxa final do contrato.")), /*#__PURE__*/React.createElement("div", {
+}, "Toque em um \xEDndice para preencher a taxa mensal. Financiamentos cobram \xEDndice + spread do banco \u2014 confira a taxa final do contrato.")), /*#__PURE__*/React.createElement("div", {
   className: "mt-3"
 }, /*#__PURE__*/React.createElement("label", {
   className: "block text-xs font-medium text-gray-600 mb-1"
@@ -6130,7 +6137,7 @@ function Simulacao({
   className: `px-3 py-2 rounded-xl text-sm font-medium flex-1 transition-all ${form.fin_sistema === 'sac' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 shadow-sm'}`
 }, "SAC (decrescente)"))), /*#__PURE__*/React.createElement("p", {
   className: "text-xs text-gray-400 mt-3"
-}, "Os valores s\xE3o estimativas \u2014 as condi\xE7\xF5es reais podem variar.")), finRes.ok && /*#__PURE__*/React.createElement("div", {
+}, "O IOF (0,38% + 0,0082%/dia, m\xE1x. 365 dias) \xE9 embutido automaticamente no valor financiado. Os valores s\xE3o estimativas.")), finRes.ok && /*#__PURE__*/React.createElement("div", {
   className: "space-y-4"
 }, /*#__PURE__*/React.createElement("div", {
   className: "grid grid-cols-2 gap-3"
@@ -6150,7 +6157,7 @@ function Simulacao({
   className: "text-lg font-bold text-gray-700 mt-1"
 }, fmt(form.fin_sistema === 'sac' ? finRes.totalS : finRes.totalP)), /*#__PURE__*/React.createElement("p", {
   className: "text-xs text-gray-400 mt-0.5"
-}, "de ", fmt(finRes.PV), " financiados")), /*#__PURE__*/React.createElement("div", {
+}, "de ", fmt(finRes.PV0), " + IOF ", fmt(finRes.iof))), /*#__PURE__*/React.createElement("div", {
   className: "bg-white rounded-2xl p-5 shadow-sm text-center"
 }, /*#__PURE__*/React.createElement("p", {
   className: "text-xs text-gray-400"
@@ -6160,9 +6167,9 @@ function Simulacao({
   className: "bg-white rounded-2xl p-5 shadow-sm text-center"
 }, /*#__PURE__*/React.createElement("p", {
   className: "text-xs text-gray-400"
-}, "Taxa mensal equivalente"), /*#__PURE__*/React.createElement("p", {
-  className: "text-lg font-bold text-gray-700 mt-1"
-}, (finRes.im * 100).toFixed(2).replace('.', ','), "% a.m."))), /*#__PURE__*/React.createElement("div", {
+}, "IOF inclu\xEDdo"), /*#__PURE__*/React.createElement("p", {
+  className: "text-lg font-bold text-teal-600 mt-1"
+}, fmt(finRes.iof)))), /*#__PURE__*/React.createElement("div", {
   className: "bg-white rounded-2xl p-5 shadow-sm"
 }, /*#__PURE__*/React.createElement("h3", {
   className: "text-sm font-medium text-gray-600 mb-3"
@@ -6210,7 +6217,7 @@ function Simulacao({
   className: "bg-white rounded-2xl p-5 shadow-sm"
 }, /*#__PURE__*/React.createElement("h3", {
   className: "text-sm font-medium text-gray-600 mb-3"
-}, "Evolu\xE7\xE3o das primeiras parcelas ", form.fin_sistema === 'sac' ? '(SAC)' : '(Price)'), /*#__PURE__*/React.createElement("div", {
+}, "Evolu\xE7\xE3o das parcelas ", form.fin_sistema === 'sac' ? '(SAC)' : '(Price)'), /*#__PURE__*/React.createElement("div", {
   className: "space-y-1"
 }, finRes.linhas.map((l, idx) => /*#__PURE__*/React.createElement("div", {
   key: idx,
@@ -6223,9 +6230,15 @@ function Simulacao({
   className: "text-red-400 w-24 text-right"
 }, "juros ", fmt(l.juros)), /*#__PURE__*/React.createElement("span", {
   className: "text-gray-400 flex-1 text-right"
-}, "saldo ", fmt(l.saldo))))), finRes.n > finRes.linhas.length && /*#__PURE__*/React.createElement("p", {
-  className: "text-xs text-gray-400 text-center mt-2"
-}, "\u2026 e mais ", finRes.n - finRes.linhas.length, " parcelas")))),
+}, "saldo ", fmt(l.saldo))))), finRes.n > 12 && !finTodas && /*#__PURE__*/React.createElement("button", {
+  type: "button",
+  onClick: () => setFinTodas(true),
+  className: "w-full mt-2 py-2 text-xs font-semibold text-blue-700 bg-blue-50 rounded-xl hover:bg-blue-100"
+}, "Ver todas as ", finRes.n, " parcelas"), finRes.n > 12 && finTodas && /*#__PURE__*/React.createElement("button", {
+  type: "button",
+  onClick: () => setFinTodas(false),
+  className: "w-full mt-2 py-2 text-xs font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100"
+}, "Mostrar apenas as primeiras 12")))),
  tipo === 'divida' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
