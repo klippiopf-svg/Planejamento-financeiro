@@ -4812,15 +4812,9 @@ function Parcelamentos({
     const pagasP = db.transacoes.filter(t => t.parcela_id === p.id && t.status === 'Confirmado').length;
     const pendentesP = db.transacoes.filter(t => t.parcela_id === p.id && t.status === 'Pendente');
     const isFinishedP = !isRecP && pagasP > 0 && pagasP >= (p.numero_parcelas || 1) && pendentesP.length === 0;
-    if (isFinishedP) {
-      const ultimaP = [...db.transacoes].filter(t => t.parcela_id === p.id && t.status === 'Confirmado').sort((a, b) => b.data?.localeCompare(a.data))[0];
-      if (ultimaP) {
-        const [uy, um] = (ultimaP.data || '').split('-').map(Number);
-        const curY = new Date().getFullYear();
-        const curM = new Date().getMonth() + 1;
-        if (uy < curY || (uy === curY && um < curM)) return false;
-      }
-    }
+    // Parcelamento encerrado (todas as parcelas confirmadas, nenhuma pendente) some na hora,
+    // inclusive no ato do fechamento da fatura — sem esperar a virada do mês.
+    if (isFinishedP) return false;
     return true;
   }).map(p => {
     const conta = db.contas.find(c => c.id === p.conta_id);
