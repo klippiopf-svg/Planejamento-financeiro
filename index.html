@@ -6809,6 +6809,32 @@ function App() {
         alert('Você está abrindo o app dentro do Instagram/WhatsApp. Para entrar com Google, toque em "Abrir no navegador" ou "Abrir no Safari".');
       }
     } catch (e) {}
+    // App instalado (iOS/Android em modo standalone): o Google abre fora do app e a sessao
+    // nao volta para o app instalado. Orienta o caminho certo.
+    try {
+      const emApp = (window.navigator.standalone === true) || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      if (emApp) {
+        setTimeout(function () {
+          alert('Você está no app instalado. Aqui, entre com e-mail e senha. Para usar o login com Google, abra o endereço do app no Safari.');
+        }, 700);
+      }
+    } catch (e) {}
+
+    // Safari restaura a pagina do cache (bfcache) ao voltar do Google: reprocessa o retorno
+    try {
+      window.addEventListener('pageshow', function (ev) {
+        if (ev.persisted && window.location.hash && window.location.hash.indexOf('access_token=') > -1) window.location.reload();
+      });
+    } catch (e) {}
+
+    // Usuario cancelou a escolha da conta no Google (comum no Safari)
+    if (window.location.hash && window.location.hash.indexOf('error=') > -1) {
+      history.replaceState(null, '', window.location.pathname);
+      if (window.location.hash.indexOf('access_denied') > -1) {
+        alert('Login com Google cancelado. Toque em "Entrar com Google" e escolha sua conta para continuar.');
+      }
+    }
+
     // Retorno do login Facebook (hash com access_token + state=facebook)
     if (window.location.hash && window.location.hash.indexOf('access_token=') > -1 && window.location.hash.indexOf('state=facebook') > -1) {
       const fp = new URLSearchParams(window.location.hash.slice(1));
