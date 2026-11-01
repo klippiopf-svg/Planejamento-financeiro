@@ -993,6 +993,17 @@ function fmtDate(s) {
   const [y, m, d] = s.split('-');
   return `${d}/${m}/${y}`;
 }
+// Parcelamento encerrado: nao recorrente, todas as parcelas confirmadas e nenhuma pendente.
+// Regra unica usada no Dashboard e na aba Parcelamentos (some assim que a ultima parcela e confirmada).
+function parcelamentoEncerrado(p, transacoes) {
+  if (!p) return false;
+  const isRec = p.numero_parcelas === 0 || (p.observacao || '').includes('[RECORRENTE]');
+  if (isRec) return false;
+  const parcelas = (transacoes || []).filter(t => t.parcela_id === p.id);
+  const pagas = parcelas.filter(t => t.status === 'Confirmado').length;
+  const pendentes = parcelas.filter(t => t.status === 'Pendente').length;
+  return pagas > 0 && pagas >= (p.numero_parcelas || 1) && pendentes === 0;
+}
 function today() {
   return new Date().toISOString().split('T')[0];
 }
@@ -3274,7 +3285,7 @@ function Dashboard({
     }
   }, /*#__PURE__*/React.createElement("canvas", {
     ref: chartRef
-  }))), db.parcelamentos.filter(p => p.status === 'Ativo').length > 0 && /*#__PURE__*/React.createElement("div", {
+  }))), db.parcelamentos.filter(p => p.status === 'Ativo' && !parcelamentoEncerrado(p, db.transacoes)).length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl p-5 shadow-sm"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-4"
@@ -3285,7 +3296,7 @@ function Dashboard({
     className: "text-blue-600 text-sm hover:underline"
   }, "Ver todos")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, db.parcelamentos.filter(p => p.status === 'Ativo').slice(0, 4).map(p => {
+  }, db.parcelamentos.filter(p => p.status === 'Ativo' && !parcelamentoEncerrado(p, db.transacoes)).slice(0, 4).map(p => {
     const pagas = db.transacoes.filter(t => t.parcela_id === p.id && t.status === 'Confirmado').length;
     const total = p.numero_parcelas || 1;
     const isRec = p.numero_parcelas === 0 || p.observacao?.includes('[RECORRENTE]');
@@ -4808,13 +4819,8 @@ function Parcelamentos({
     className: "space-y-4"
   }, db.parcelamentos.filter(p => {
     if (p.status === 'Cancelado') return false;
-    const isRecP = p.numero_parcelas === 0 || p.observacao?.includes('[RECORRENTE]');
-    const pagasP = db.transacoes.filter(t => t.parcela_id === p.id && t.status === 'Confirmado').length;
-    const pendentesP = db.transacoes.filter(t => t.parcela_id === p.id && t.status === 'Pendente');
-    const isFinishedP = !isRecP && pagasP > 0 && pagasP >= (p.numero_parcelas || 1) && pendentesP.length === 0;
-    // Parcelamento encerrado (todas as parcelas confirmadas, nenhuma pendente) some na hora,
-    // inclusive no ato do fechamento da fatura — sem esperar a virada do mês.
-    if (isFinishedP) return false;
+    // Mesma regra do Dashboard: encerrado some na hora, inclusive no fechamento da fatura.
+    if (parcelamentoEncerrado(p, db.transacoes)) return false;
     return true;
   }).map(p => {
     const conta = db.contas.find(c => c.id === p.conta_id);
