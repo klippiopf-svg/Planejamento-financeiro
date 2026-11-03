@@ -1,6 +1,6 @@
 {
   "name": "Planejamento Financeiro",
-  "short_name": "Planejamento",
+  "short_name": "Klippio Fin",
   "description": "Controle financeiro doméstico: contas, transações, metas, cartões e simulações.",
   "start_url": "./?fonte=pwa",
   "scope": "./",
