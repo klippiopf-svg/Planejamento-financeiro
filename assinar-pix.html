@@ -82,6 +82,17 @@
     el('areaEscolha').innerHTML = '<p class="status erro">Você precisa estar logado no app. Abra o Klippio Fin e entre na sua conta.</p><a class="voltar" href="index.html">Abrir o app</a>';
   }
 
+  // pre-seleciona o plano que veio do app (?plano=anual)
+  var planoDaUrl = new URLSearchParams(location.search).get('plano');
+  if (planoDaUrl === 'anual') {
+    var cardAnual = document.querySelector('.plano[data-plano="anual"]');
+    if (cardAnual) {
+      document.querySelectorAll('.plano').forEach(function (x) { x.classList.remove('ativo'); });
+      cardAnual.classList.add('ativo');
+      planoEscolhido = 'anual';
+    }
+  }
+
   document.querySelectorAll('.plano').forEach(function (p) {
     p.addEventListener('click', function () {
       document.querySelectorAll('.plano').forEach(function (x) { x.classList.remove('ativo'); });
