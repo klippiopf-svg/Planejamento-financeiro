@@ -949,6 +949,15 @@ async function callAuth(p) {
   });
   return r.json();
 }
+// Token de login invalido/expirado (ex.: depois de rotacionar o segredo JWT):
+// limpa a sessao e volta para a tela de login, em vez de deixar a tela vazia.
+let sessaoExpiradaTratada = false;
+function tratarSessaoExpirada() {
+  if (sessaoExpiradaTratada) return;
+  sessaoExpiradaTratada = true;
+  safeDel('cfd_token');
+  setTimeout(function () { window.location.reload(); }, 60);
+}
 async function callAssinatura(token, p) {
   const r = await fetch(ASSINATURA_URL, {
     method: 'POST',
@@ -958,6 +967,7 @@ async function callAssinatura(token, p) {
     },
     body: JSON.stringify(p)
   });
+  if (r.status === 401) tratarSessaoExpirada();
   return r.json();
 }
 async function callDados(token, p) {
@@ -969,6 +979,7 @@ async function callDados(token, p) {
     },
     body: JSON.stringify(p)
   });
+  if (r.status === 401) tratarSessaoExpirada();
   return r.json();
 }
 async function callCartao(token, p) {
@@ -980,6 +991,7 @@ async function callCartao(token, p) {
     },
     body: JSON.stringify(p)
   });
+  if (r.status === 401) tratarSessaoExpirada();
   return r.json();
 }
 function fmt(v) {
