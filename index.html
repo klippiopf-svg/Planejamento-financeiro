@@ -6711,6 +6711,10 @@ function BannerAssinatura({ assina, token }) {
       disabled: carregando,
       className: "flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
     }, carregando ? '...' : 'R$ 132/ano')), /*#__PURE__*/React.createElement("button", {
+      key: "pix",
+      onClick: () => { window.location.href = 'assinar-pix.html?plano=mensal'; },
+      className: "w-full py-2.5 rounded-xl border-2 border-emerald-300 text-emerald-700 text-sm font-semibold hover:bg-emerald-50"
+    }, "\uD83D\uDCB8 Pagar com Pix"), /*#__PURE__*/React.createElement("button", {
       key: "dispensar",
       onClick: () => setFechado(true),
       className: "w-full mt-1 text-xs text-gray-400 underline"
@@ -7161,6 +7165,9 @@ function App() {
   }, user.nome), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-400 truncate"
   }, user.email))), showUser && /*#__PURE__*/React.createElement("button", {
+    onClick: () => { window.location.href = 'assinar-pix.html?plano=mensal'; },
+    className: "w-full mt-1 text-left px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50 rounded-xl flex items-center gap-2"
+  }, "\uD83D\uDCB8 Pagar com Pix"), /*#__PURE__*/React.createElement("button", {
     onClick: logout,
     className: "w-full mt-1 text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl flex items-center gap-2"
   }, "\uD83D\uDEAA Sair"))), /*#__PURE__*/React.createElement("div", {
