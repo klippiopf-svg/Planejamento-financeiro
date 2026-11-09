@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Convidar para o Klippio Fin</title>
+<link rel="manifest" href="convidar-manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Convidar">
+<meta name="theme-color" content="#ffffff">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh; padding: 32px 22px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #ffffff; color: #111827; text-align: center;
+  }
+  img.ico { width: 132px; height: 132px; border-radius: 30px; box-shadow: 0 8px 24px rgba(15,23,42,.14); margin-bottom: 22px; }
+  h1 { font-size: 24px; margin: 0 0 10px; letter-spacing: -.02em; }
+  p { font-size: 15px; line-height: 1.55; color: #4b5563; margin: 0 0 26px; max-width: 340px; }
+  button {
+    width: 100%; max-width: 340px; border: 0; border-radius: 16px;
+    padding: 17px 20px; font-size: 17px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease, opacity .2s ease;
+  }
+  button:active { transform: scale(.98); }
+  .principal { background: #25D366; color: #0b2e1a; box-shadow: 0 6px 18px rgba(37,211,102,.32); margin-bottom: 12px; }
+  .secundario { background: #f1f5f9; color: #334155; font-size: 15px; padding: 14px 20px; }
+  .texto {
+    width: 100%; max-width: 340px; margin-top: 26px; padding: 14px;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+    font-size: 13px; color: #475569; text-align: left; word-break: break-word; display: none;
+  }
+  .aviso { font-size: 12px; color: #94a3b8; margin-top: 22px; max-width: 330px; }
+  #ok { font-size: 13px; color: #059669; font-weight: 600; margin-top: 14px; min-height: 18px; }
+</style>
+</head>
+<body>
+  <img class="ico" src="icon-512.png" alt="Klippio Fin">
+  <h1>Convidar para o Klippio Fin</h1>
+  <p>Compartilhe o app com quem precisa organizar as contas. O convite vai com o link pronto para instalar.</p>
+
+  <button class="principal" id="btnWhats">Enviar pelo WhatsApp</button>
+  <button class="secundario" id="btnOutros">Compartilhar por outros apps</button>
+  <button class="secundario" id="btnCopiar" style="margin-top:12px">Copiar o link</button>
+  <div id="ok"></div>
+  <div class="texto" id="caixaTexto"></div>
+  <div class="aviso">Quem receber abre o link, toca nos três pontinhos do Chrome e escolhe "Instalar aplicativo". Em poucos segundos o app fica na tela inicial.</div>
+
+<script>
+  var LINK = 'https://klippiopf-svg.github.io/Planejamento-financeiro/';
+  var TEXTO = 'Olha o Klippio Fin, app de controle financeiro doméstico: contas, cartões, metas e parcelamentos. 3 meses grátis:\n' + LINK;
+
+  function mostrarAviso(msg) {
+    var el = document.getElementById('ok');
+    el.textContent = msg;
+    setTimeout(function () { el.textContent = ''; }, 3200);
+  }
+
+  // WhatsApp: tenta o esquema nativo (abre o app direto), sem passar pelo navegador
+  document.getElementById('btnWhats').addEventListener('click', function () {
+    var url = 'whatsapp://send?text=' + encodeURIComponent(TEXTO);
+    var inicio = Date.now();
+    window.location.href = url;
+    // se o app do WhatsApp nao abriu em 1,2s, cai para o link universal
+    setTimeout(function () {
+      if (Date.now() - inicio < 1600 && !document.hidden) {
+        window.location.href = 'https://wa.me/?text=' + encodeURIComponent(TEXTO);
+      }
+    }, 1200);
+  });
+
+  // Compartilhamento nativo (escolhe qualquer app: WhatsApp, Telegram, e-mail...)
+  document.getElementById('btnOutros').addEventListener('click', function () {
+    if (navigator.share) {
+      navigator.share({ title: 'Klippio Fin', text: TEXTO }).catch(function () {});
+    } else {
+      document.getElementById('btnWhats').click();
+    }
+  });
+
+  // Copiar link
+  document.getElementById('btnCopiar').addEventListener('click', function () {
+    var copiar = function () {
+      mostrarAviso('Link copiado!');
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(TEXTO).then(copiar).catch(function () { caixa(); });
+    } else { caixa(); }
+    function caixa() {
+      var c = document.getElementById('caixaTexto');
+      c.style.display = 'block';
+      c.textContent = TEXTO;
+      mostrarAviso('Selecione e copie o texto acima');
+    }
+  });
+
+  // Ao abrir pelo atalho, ja oferece o compartilhamento (sem abrir navegador)
+  window.addEventListener('load', function () {
+    var veioDoAtalho = window.matchMedia('(display-mode: standalone)').matches;
+    if (veioDoAtalho && navigator.share) {
+      setTimeout(function () {
+        navigator.share({ title: 'Klippio Fin', text: TEXTO }).catch(function () {});
+      }, 400);
+    }
+  });
+</script>
+</body>
+</html>
