@@ -1,7 +1,7 @@
 {
   "name": "Planejamento Financeiro",
   "short_name": "Klippio Fin",
-  "description": "Controle financeiro doméstico: contas, transações, metas, cartões e simulações.",
+  "description": "O app mais completo para gestão financeira: contas, cartões, parcelamentos e metas.",
   "start_url": "./?fonte=pwa",
   "scope": "./",
   "display": "standalone",
